@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ToDo</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
+          sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #8e9cd4;
+        color: #1f2a37;
+      }
+      .container {
+        max-width: 720px;
+        margin: 40px auto;
+        background: #acb2d3;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        padding: 24px;
+      }
+      h1 {
+        margin: 0 0 16px;
+        font-size: 22px;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      input[type="text"] {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+      }
+      button {
+        cursor: pointer;
+        padding: 10px 14px;
+        border: 0;
+        border-radius: 8px;
+        background: #788ad1;
+        color: #fff;
+        font-weight: 600;
+      }
+      button.secondary {
+        background: #6b7280;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .todo-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        margin-bottom: 8px;
+      }
+      .left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .title {
+        min-width: 0;
+        word-break: break-word;
+      }
+      .done .title {
+        text-decoration: line-through;
+        color: #6b7280;
+      }
+      .muted {
+        color: #6b7280;
+        font-size: 13px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+      .danger {
+        background: #ef4444;
+      }
+      .warning {
+        background: #f59e0b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>ToDo приложение</h1>
+
+      <div class="row">
+        <input id="taskInput" type="text" placeholder="Новая задача" />
+        <button id="addBtn">Добавить</button>
+        <button id="clearCompletedBtn" class="secondary">
+          Очистить выполненные
+        </button>
+        <button id="clearAllBtn" class="secondary">Очистить всё</button>
+      </div>
+
+      <div class="muted" id="stats">Всего: 0 • Выполнено: 0</div>
+
+      <ul id="list"></ul>
+    </div>
+
+    <script>
+      const input = document.getElementById("taskInput");
+      const addBtn = document.getElementById("addBtn");
+      const list = document.getElementById("list");
+      const stats = document.getElementById("stats");
+      const clearCompletedBtn = document.getElementById("clearCompletedBtn");
+      const clearAllBtn = document.getElementById("clearAllBtn");
+
+      let items = [];
+
+      function updateStats() {
+        const total = items.length;
+        const done = items.filter((x) => x.done).length;
+        stats.textContent = `Всего: ${total} • Выполнено: ${done}`;
+      }
+
+      function render() {
+        list.innerHTML = "";
+        for (const it of items) {
+          const li = document.createElement("li");
+          li.className = "todo-item" + (it.done ? " done" : "");
+
+          const left = document.createElement("div");
+          left.className = "left";
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = it.done;
+          cb.addEventListener("change", () => {
+            it.done = cb.checked;
+            render();
+          });
+
+          const span = document.createElement("span");
+          span.className = "title";
+          span.textContent = it.text;
+
+          left.appendChild(cb);
+          left.appendChild(span);
+
+          const actions = document.createElement("div");
+          actions.className = "actions";
+
+          const del = document.createElement("button");
+          del.textContent = "Удалить";
+          del.className = "danger";
+          del.addEventListener("click", () => {
+            // ошибка: удаляется не та задача(удаляется первая)
+            const first = document.querySelector(".todo-item");
+            if (first) {
+              const idx = Array.from(list.children).indexOf(first);
+              if (idx > -1) {
+                items.splice(idx, 1);
+                render();
+                return;
+              }
+            }
+          });
+
+          const edit = document.createElement("button");
+          edit.textContent = "Редактировать";
+          edit.className = "warning";
+          edit.addEventListener("click", () => {
+            const text = prompt("Новое название задачи", it.text);
+            if (text !== null) {
+              it.text = text;
+              render();
+            }
+          });
+
+          actions.appendChild(edit);
+          actions.appendChild(del);
+
+          li.appendChild(left);
+          li.appendChild(actions);
+          list.appendChild(li);
+        }
+        updateStats();
+      }
+
+      function addTask() {
+        const text = input.value; //ошибка: можно добавить пробелы, то есть пустую задачу
+        if (text === "") {
+          alert("Введите текст задачи");
+          return;
+        }
+        items.push({ text, done: false });
+        input.value = "";
+        render();
+      }
+
+      addBtn.addEventListener("click", addTask);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") addTask();
+      });
+
+      clearCompletedBtn.addEventListener("click", () => {
+        //ошибка: очищаются все задачи, а не только выполненные
+        list.innerHTML = "";
+        items = [];
+        updateStats();
+      });
+
+      clearAllBtn.addEventListener("click", () => {
+        items = [];
+        render();
+      });
+
+      render();
+    </script>
+  </body>
+</html>
